@@ -1,10 +1,12 @@
 public class Worker implements Runnable {
     private int workerId;
     private ReservationManager manager;
+    private Cancel cancelManager;
 
-    public Worker(int workerId, ReservationManager manager) {
+    public Worker(int workerId, ReservationManager manager, Cancel cancelManager) {
         this.workerId = workerId;
         this.manager = manager;
+        this.cancelManager = cancelManager;
     }
 
     @Override
@@ -16,6 +18,9 @@ public class Worker implements Runnable {
 
                 if(request.getCommand().equals("RESERVE")) {
                     manager.reserve(request.getTicketId(), request.getClientId(), workerId);
+                }
+                else if(request.getCommand().equals("CANCEL")) {
+                    cancelManager.cancel(request.getTicketId(), request.getClientId(), workerId);
                 }
 
             } catch(Exception e) {
