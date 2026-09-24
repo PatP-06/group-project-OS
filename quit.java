@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.Socket;
 
 public class Quit {
@@ -6,7 +7,9 @@ public class Quit {
         if (writer != null) {
             writer.println("Thankyou for using");
         }
+
         ServerLogger.log(clientId, "QUIT", "Client requested to disconnect");
+
         try {
             if (socket != null && !socket.isClosed()) {
                 socket.close();
