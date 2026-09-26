@@ -33,7 +33,7 @@ public class Worker implements Runnable {
                         + request.getClientId()
                 );
 
-                if ("RESERVE".equals(request.getCommand())) { // Null exception in case bugged string == null (request.getCommand().equals("RESERVE")[old code] ; null = 'reserve' #null)
+                if ("RESERVE".equals(request.getCommand())) { // Null exception in case bugged string == null (request.getCommand().equals("RESERVE")[old code] ; null = 'reserve' #unknown command)
 
                     boolean success = manager.reserve(
                         request.getTicketId(),
