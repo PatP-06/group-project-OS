@@ -1,10 +1,8 @@
 import java.io.*;
 import java.net.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Server {
     private static final int PORT = 8080;
-    private static final AtomicInteger clientCounter = new AtomicInteger(1);
 
     public static void main(String[] args) {
         SeatManager seatManager = new SeatManager();
@@ -49,21 +47,27 @@ public class Server {
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                String clientId = "Client-" + clientCounter.getAndIncrement();
-                new Thread(() -> handleClient(clientSocket, clientId, seatManager)).start();
+                new Thread(() -> handleClient(clientSocket, seatManager)).start();
             }
         } catch (IOException e) {
             ServerLogger.log("SERVER", "ERROR", "Server exception: " + e.getMessage());
         }
     }
 
-    private static void handleClient(Socket socket, String clientId, SeatManager seatManager) {
-        ServerLogger.log(clientId, "CONNECT", "Connected from " + socket.getRemoteSocketAddress());
+    private static void handleClient(Socket socket, SeatManager seatManager) {
+        String clientId = "Unknown";
 
         try (
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
         ) {
+            
+            String firstLine = in.readLine();
+            if (firstLine != null && !firstLine.trim().isEmpty()){
+                clientId = firstLine.trim();
+            }
+            ServerLogger.log(clientId, "CONNECT", "Connected from " + socket.getRemoteSocketAddress());
+
             String line;
             while ((line = in.readLine()) != null) {
                 String[] parts = line.trim().split("\\s+");
