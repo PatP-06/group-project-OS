@@ -10,7 +10,12 @@ public class SeatManager {
     public String listSeat() {
         String result = "";
         for (int j = 0; j < seats.length; j++) {
-            result += "[Ticket " + seats[j].getSeatNumber() + ": " + seats[j].getStatus() + "]\n";
+            Seat targetSeat = seats[j];
+            if (seats[j].getStatus().contains("AVAILABLE")) {
+                result += "[Ticket " + seats[j].getSeatNumber() + ": " + seats[j].getStatus() + "]\n";
+            }else if (seats[j].getStatus().contains("RESERVE")) {
+                result += "[Ticket " + seats[j].getSeatNumber() + ": " + targetSeat.getOwner() + "]\n";
+            }
         }
         return result;
     }
