@@ -23,14 +23,14 @@ public class Worker implements Runnable {
                         );
                         break;
 
-                    /*case "CANCEL":
+                    case "CANCEL":
                         reservationManager.cancel(
                             request.getTicketId(),
                             request.getClientId(),
                             workerId
                         );
                         break;
-                    */
+                        
                     default:
                         ServerLogger.log(
                             "Worker-" + workerId,
