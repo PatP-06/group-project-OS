@@ -1,7 +1,9 @@
 
 public class Server {
     public static void main(String[] args) {
-        
+        // ล้างไฟล์คิวตกค้างเก่าทั้งหมดทันทีที่เปิด Server ใหม่
+        MessageQueue.cleanQueue();
+
         SeatManager seatManager = new SeatManager();
 
         //สร้าง Bridge เชื่อม SeatManager เข้ากับ ReservationManager

@@ -15,6 +15,22 @@ public class MessageQueue {
         if (!RES_DIR.exists()) RES_DIR.mkdirs();
     }
 
+    // ล้างไฟล์คิวที่ตกค้างทั้งหมดอัตโนมัติเมื่อ Server สตาร์ตใหม่
+    public static void cleanQueue() {
+        init();
+        cleanDir(REQ_DIR);
+        cleanDir(RES_DIR);
+    }
+
+    private static void cleanDir(File dir) {
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File f : files) {
+                f.delete();
+            }
+        }
+    }
+
     // --- ฝั่ง Client: ส่งคำขอลงไฟล์ IPC ---
     public static void sendRequest(String clientId, String command, int ticketId) {
         init();
