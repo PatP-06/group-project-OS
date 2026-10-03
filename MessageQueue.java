@@ -63,22 +63,29 @@ public class MessageQueue {
     // --- ฝั่ง Server/Worker: ส่งผลลัพธ์กลับหา Client ---
     public static void sendResponse(String clientId, String responseMessage) {
         init();
+        File tmp = new File(RES_DIR, clientId + ".res.tmp");
         File file = new File(RES_DIR, clientId + ".res");
-        try (PrintWriter out = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter out = new PrintWriter(new FileWriter(tmp))) {
             out.println(responseMessage);
         } catch (IOException e) {
             e.printStackTrace();
+            return;
         }
+        tmp.renameTo(file);
+    }
+
+    public static String receiveResponse(String clientId) {
+        return receiveResponse(clientId, 10000);
     }
 
     // --- ฝั่ง Client: รอรับผลลัพธ์จาก Server ---
-    public static String receiveResponse(String clientId) {
+    public static String receiveResponse(String clientId, long timeoutMs) {
         init();
         File file = new File(RES_DIR, clientId + ".res");
         long startTime = System.currentTimeMillis();
 
         while (!file.exists()) {
-            if (System.currentTimeMillis() - startTime > 10000) {
+            if (System.currentTimeMillis() - startTime > timeoutMs) {
                 return "FAILED: Request timeout";
             }
             try {
@@ -86,13 +93,20 @@ public class MessageQueue {
             } catch (InterruptedException ignored) {}
         }
 
+        String result;
         try (BufferedReader in = new BufferedReader(new FileReader(file))) {
-            String result = in.readLine();
-            file.delete();
-            return result;
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = in.readLine()) != null) {
+                if (sb.length() > 0) sb.append("\n");
+                sb.append(line);
+            }
+            result = sb.toString();
         } catch (Exception e) {
             return "FAILED: Cannot read response";
         }
+        file.delete();
+        return result;
     }
 
     public static synchronized void addRequest(Request request) {
