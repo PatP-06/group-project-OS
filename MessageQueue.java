@@ -22,15 +22,18 @@ public class MessageQueue {
         long seq = counter.incrementAndGet();
 
         String filename = String.format("%014d_%05d_%s.req", timestamp, seq, clientId);
+        File tmpFile = new File(REQ_DIR, filename + ".tmp");
         File file = new File(REQ_DIR, filename);
 
-        try (PrintWriter out = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter out = new PrintWriter(new FileWriter(tmpFile))) {
             out.println(clientId);
             out.println(command);
             out.println(ticketId);
         } catch (IOException e) {
             e.printStackTrace();
+            return;
         }
+        tmpFile.renameTo(file); // เปลี่ยนชื่อเมื่อเขียนเสร็จสมบูรณ์ ป้องกัน Server แย่งอ่าน
     }
 
     // --- ฝั่ง Server: ดึงคำขอ IPC จาก Client ---

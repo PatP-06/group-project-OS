@@ -14,6 +14,7 @@
 */
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.*;
@@ -128,7 +129,7 @@ public class Client {
         }
     }
 
-    private static void runStressTest() throws InterruptedException {
+        private static void runStressTest() throws InterruptedException {
         final int TOTAL = 250;
         ExecutorService executor = Executors.newFixedThreadPool(TOTAL);
         CountDownLatch ready = new CountDownLatch(TOTAL);
@@ -137,15 +138,32 @@ public class Client {
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
 
-        for (int i = 1; i <= TOTAL; i++) {
-            // ไฟล์ response ตั้งชื่อตาม clientId จึงต้องไม่ซ้ำกันในแต่ละ thread
-            // (ยังคงแข่งกัน 5 คนต่อ 1 resource เหมือนเดิม)
-            final String client = "client-" + ((i - 1) % 5 + 1) + "-" + i;
-            final int currentResourceId = (i - 1) / 5 + 1;
+        // 1. สร้างลิสต์คำขอทั้งหมด 250 รายการ (50 ตั๋ว x 5 clients)
+        List<int[]> tasks = new ArrayList<>();
+        for (int resId = 1; resId <= 50; resId++) {
+            for (int clientNum = 1; clientNum <= 5; clientNum++) {
+                tasks.add(new int[]{resId, clientNum});
+            }
+        }
+        
+        // 2. สลับลำดับคำขอแบบสุ่ม เพื่อให้ทุก Client มีโอกาสเข้าคิวก่อน-หลังเท่าเทียมกัน
+        Collections.shuffle(tasks);
+
+        for (int i = 0; i < TOTAL; i++) {
+            final int[] task = tasks.get(i);
+            final int currentResourceId = task[0];
+            final int clientNum = task[1];
+            final String client = "client-" + clientNum + "-" + (i + 1);
+
             executor.submit(() -> {
                 try {
                     ready.countDown();
                     startSignal.await();
+
+                    // 3. จำลอง Network Jitter (1-15 ms) เหมือนตอนใช้ Socket ให้เกิดการแข่งขัน Concurrency จริง
+                    int jitter = ThreadLocalRandom.current().nextInt(1, 15);
+                    Thread.sleep(jitter);
+
                     MessageQueue.sendRequest(client, "RESERVE", currentResourceId);
                     String resp = MessageQueue.receiveResponse(client, 120000);
                     if (resp != null && resp.contains("SUCCESS:")) successCount.incrementAndGet();
@@ -171,11 +189,11 @@ public class Client {
 
     // รอรับผลลัพธ์จาก MessageQueue แล้วห่อเป็น List<String> ให้เข้ากับ TUI เดิม
     public static List<String> readResponse(String clientId) {
-    List<String> lines = new ArrayList<>();
-    String resp = MessageQueue.receiveResponse(clientId);
-    if (resp != null) {
-        for (String l : resp.split("\n")) lines.add(l);
+        List<String> lines = new ArrayList<>();
+        String resp = MessageQueue.receiveResponse(clientId);
+        if (resp != null) {
+            for (String l : resp.split("\n")) lines.add(l);
+        }
+        return lines;
     }
-    return lines;
-}
 }
