@@ -1,4 +1,3 @@
-import java.util.Scanner;
 
 public class Server {
     public static void main(String[] args) {
@@ -51,51 +50,37 @@ public class Server {
         System.out.println("==========================================================");
 
 
-        Scanner scanner = new Scanner(System.in);
+        System.out.println(" Server is running and listening on MessageQueue...");
+
         while (true) {
-            System.out.print("> ");
-            if (!scanner.hasNextLine()) break;
-            String line = scanner.nextLine().trim();
-            if (line.isEmpty()) continue;
+            Request request = MessageQueue.getIpcRequest();
 
-            String[] parts = line.split("\\s+");
-            String firstWord = parts[0].toUpperCase();
+            if (request != null) {
+                String cmd = request.getCommand().toUpperCase();
 
-            // LIST
-            if (firstWord.equals("LIST")) {
-                System.out.println(seatManager.listSeat().trim());
-                ServerLogger.log("SERVER", "LIST", "Displayed seat list");
-                continue;
-            }
-
-            // STATUS
-            if (firstWord.equals("STATUS")) {
-                if (parts.length < 2) {
-                    System.out.println("ERROR: Please specify ticket number");
-                    continue;
+                // LIST
+                if (cmd.equals("LIST")) {
+                    MessageQueue.sendResponse(request.getClientId(), seatManager.listSeat().trim());
+                    ServerLogger.log("SERVER", "LIST", "Sent seat list to " + request.getClientId());
+                } 
+                // STATUS
+                else if (cmd.equals("STATUS")) {
+                    MessageQueue.sendResponse(request.getClientId(), seatManager.statusSeat(request.getTicketId()));
+                    ServerLogger.log("SERVER", "STATUS", "Sent status of ticket " + request.getTicketId() + " to " + request.getClientId());
+                } 
+                // QUIT
+                else if (cmd.equals("QUIT")) {
+                    MessageQueue.sendResponse(request.getClientId(), "Thankyou for using");
+                    ServerLogger.log(request.getClientId(), "QUIT", "Client finished session");
+                } 
+                // RESERVE หรือ CANCEL
+                else {
+                    MessageQueue.addRequest(request);
                 }
-                int tId = Integer.parseInt(parts[1]);
-                System.out.println(seatManager.statusSeat(tId));
-                ServerLogger.log("SERVER", "STATUS", "Checked ticket " + tId);
-                continue;
-            }
-
-            // QUIT
-            if (firstWord.equals("QUIT")) {
-                System.out.println("Thankyou for using");
-                ServerLogger.log("SERVER", "QUIT", "Server shutting down");
-                break;
-            }
-
-            // CANCEL
-            if (parts.length >= 3) {
-                String clientId = parts[0];
-                String command = parts[1].toUpperCase();
-                int ticketId = Integer.parseInt(parts[2]);
-
-                MessageQueue.addRequest(new Request(command, ticketId, clientId));
             } else {
-                System.out.println("ERROR: Invalid format. Use: <ClientId> <Command> <TicketId> (e.g. Client-1 RESERVE 10)");
+                try {
+                    Thread.sleep(30); // พัก 30ms ถ้าคิวว่าง เพื่อไม่ให้กิน CPU ไม่มีก็ได้แต่มีก็จะเท่กว่า
+                } catch (InterruptedException ignored) {}
             }
         }
     }
