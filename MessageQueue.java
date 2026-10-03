@@ -64,15 +64,25 @@ public class MessageQueue {
             File lockFile = new File(file.getAbsolutePath() + ".lock");
             
             if (file.renameTo(lockFile)) {
-                try (BufferedReader in = new BufferedReader(new FileReader(lockFile))) {
-                    String clientId = in.readLine();
-                    String command = in.readLine();
-                    int ticketId = Integer.parseInt(in.readLine());
+                String clientId = null;
+                String command = null;
+                int ticketId = 0;
+                boolean ok = false;
 
-                    lockFile.delete();
-                    return new Request(command, ticketId, clientId);
+                try (BufferedReader in = new BufferedReader(new FileReader(lockFile))) {
+                    clientId = in.readLine();
+                    command = in.readLine();
+                    ticketId = Integer.parseInt(in.readLine());
+                    ok = true;
                 } catch (Exception e) {
-                    lockFile.delete();
+                    ok = false;
+                }
+
+                // ปิด reader ให้เสร็จก่อน ถึงจะลบไฟล์บน Windows ได้สำเร็จ
+                lockFile.delete();
+
+                if (ok && clientId != null && command != null) {
+                    return new Request(command, ticketId, clientId);
                 }
             }
         }

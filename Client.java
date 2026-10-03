@@ -149,11 +149,12 @@ public class Client {
         // 2. สลับลำดับคำขอแบบสุ่ม เพื่อให้ทุก Client มีโอกาสเข้าคิวก่อน-หลังเท่าเทียมกัน
         Collections.shuffle(tasks);
 
+        long runId = System.currentTimeMillis();
         for (int i = 0; i < TOTAL; i++) {
             final int[] task = tasks.get(i);
             final int currentResourceId = task[0];
             final int clientNum = task[1];
-            final String client = "client-" + clientNum + "-" + (i + 1);
+            final String client = "client-" + clientNum + "-" + (i + 1) + "-" + runId;
 
             executor.submit(() -> {
                 try {
