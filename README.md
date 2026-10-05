@@ -8,14 +8,18 @@
 ## สารบัญ (Table of Contents)
 
 - [โครงสร้างโปรเจกต์ (Project Structure)](#โครงสร้างโปรเจกต์-project-structure)
-- [คำสั่งที่รองรับ (Supported Commands)](#คำสั่งที่รองรับ-supported-commands)
-- [วิธีติดตั้งและรันระบบ (Getting Started)](#วิธีติดตั้งและรันระบบ-getting-started)
-  - [วิธีที่ 1: รันบนเครื่องโดยตรง (Local Terminal)](#วิธีที่-1-รันบนเครื่องโดยตรง-local-terminal)
-  - [วิธีที่ 2: รันผ่าน Docker & Docker Compose](#วิธีที่-2-รันผ่าน-docker--docker-compose)
-- [การทดลอง Race Condition vs Synchronization](#การทดลอง-race-condition-vs-synchronization)
+- [คู่มือการใช้งานระบบและ Docker ตามข้อกำหนด (System & Docker Guide)](#คู่มือการใช้งานระบบและ-docker-ตามข้อกำหนด-system--docker-guide)
+  - [1. วิธี Build Docker Image](#1-วิธี-build-docker-image)
+  - [2. วิธี Run Container](#2-วิธี-run-container)
+  - [3. วิธีเปิด Server](#3-วิธีเปิด-server)
+  - [4. วิธีเปิด Client หลายตัว](#4-วิธีเปิด-client-หลายตัว)
+  - [5. รูปแบบ Message Queue ที่ใช้](#5-รูปแบบ-message-queue-ที่ใช้)
+  - [6. คำสั่งที่ Client รองรับ](#6-คำสั่งที่-client-รองรับ)
+  - [7. วิธีทดลอง Race Condition](#7-วิธีทดลอง-race-condition)
+  - [8. วิธีเปิด/ปิด Synchronization](#8-วิธีเปิดปิด-synchronization)
+- [วิธีรันบนเครื่องโดยตรง (Local Terminal Execution)](#วิธีรันบนเครื่องโดยตรง-local-terminal-execution)
 - [ระบบบันทึกส่วนกลาง (Centralized Logging)](#ระบบบันทึกส่วนกลาง-centralized-logging)
 - [ผู้จัดทำ (Producer)](#ผู้จัดทำ-producer)
-
 ---
 
 ## โครงสร้างโปรเจกต์ (Project Structure)
@@ -37,42 +41,151 @@
 
 ---
 
-## คำสั่งที่รองรับ (Supported Commands)
+## คู่มือการใช้งานระบบและ Docker ตามข้อกำหนด (System & Docker Guide)
 
-| คำสั่ง | ตัวอย่างการใช้งาน | คำอธิบาย |
-| :---: | :--- | :--- |
-| `[1] LIST` | `LIST` หรือพิมพ์ `1` | แสดงผังตั๋วทั้งหมด 50 ใบ พร้อมระบุสถานะสีสันแบบเรียลไทม์ |
-| `[2] STATUS` | `STATUS 10` หรือพิมพ์ `2` | ตรวจสอบสถานะและผู้ครอบครองตั๋วใบที่ระบุ |
-| `[3] RESERVE` | `RESERVE 10` หรือพิมพ์ `3` | จองตั๋วใบที่ต้องการ (หากยังว่างอยู่) |
-| `[4] CANCEL` | `CANCEL 10` หรือพิมพ์ `4` | ยกเลิกการจองตั๋ว **(ต้องเป็นเจ้าของตั๋วเท่านั้น จึงจะยกเลิกได้)** |
-| `[5] SHOOT` | `SHOOT` หรือพิมพ์ `5` | รัน Stress Test: ส่ง 250 คำขอยิงแย่งตั๋วพร้อมกัน 5 คนต่อ 1 ตั๋ว |
-| `[0] QUIT` | `QUIT` หรือพิมพ์ `0` | ปิดโปรแกรมและสิ้นสุดเซสชัน |
+ระบบนี้รองรับการทำงานบน Container ด้วย Docker และจำลองสภาวะแวดล้อมระบบปฏิบัติการ (OS) ผ่านหัวข้อสำคัญ 8 ประการ ดังนี้:
 
----
-
-## วิธีติดตั้งและรันระบบ (Getting Started)
-
-### ความต้องการของระบบ (Prerequisites)
-* Java Development Kit (JDK 17 หรือใหม่กว่า)
-* Docker & Docker Desktop *(หากต้องการรันบน Container)*
+### 1. วิธี Build Docker Image
+สามารถเลือก Build ได้ 2 วิธีตามเครื่องมือที่มีในเครื่อง:
+* **วิธีที่ 1 (ผ่าน Dockerfile โดยตรง):**
+  เปิด Terminal ในโฟลเดอร์โปรเจกต์ แล้วรันคำสั่ง:
+  ```bash
+  docker build -t os-server .
+  ```
+* **วิธีที่ 2 (ผ่าน Docker Compose):**
+  ```bash
+  docker compose build
+  ```
 
 ---
 
-### วิธีที่ 1: รันบนเครื่องโดยตรง (Local Terminal)
+### 2. วิธี Run Container
+* **วิธีที่ 1 (ผ่าน Docker CLI):**
+  รัน Container ในพื้นหลัง (Detach mode) พร้อมทำการ Mount ไดเรกทอรีโปรเจกต์เข้าไปที่ `/workspace`:
+  * สำหรับ PowerShell / macOS / Linux:
+    ```bash
+    docker run -d --name os-server -v "${PWD}:/workspace" os-server
+    ```
+  * สำหรับ Windows Command Prompt (cmd):
+    ```cmd
+    docker run -d --name os-server -v "%cd%:/workspace" os-server
+    ```
+* **วิธีที่ 2 (ผ่าน Docker Compose - แนะนำ):**
+  ```bash
+  docker compose up -d
+  ```
+* **ตรวจสอบสถานะการทำงานของ Container:**
+  ```bash
+  docker ps
+  ```
 
-#### ขั้นตอนที่ 1: คอมไพล์โค้ด
+---
+
+### 3. วิธีเปิด Server
+ระบบถูกตั้งค่าให้อ่านและคอมไพล์โค้ดภาษา Java พร้อมเริ่มการทำงานของ `Server` อัตโนมัติทันทีที่ Container เริ่มทำงาน (`javac *.java && java Server`)
+* **ตรวจสอบการทำงานและหน้าจอแสดงผลของ Server ได้ผ่านทาง Log:**
+  ```bash
+  docker logs -f os-server
+  ```
+* **กรณีที่ต้องการสั่งรัน Server ใหม่อีกครั้งด้วยตนเองภายใน Container:**
+  ```bash
+  docker exec -it os-server java Server
+  ```
+
+---
+
+### 4. วิธีเปิด Client หลายตัว
+ให้เปิดหน้าต่าง Terminal ใหม่แยกกันตามจำนวน Client ที่ต้องการจำลอง (เช่น Client 1 ถึง Client 5) แล้วรันคำสั่ง Execute เข้าสู่ Container ดังนี้:
+* **Terminal หน้าต่างที่ 1 (จำลอง Client 1):**
+  ```bash
+  docker exec -it os-server java Client 1
+  ```
+* **Terminal หน้าต่างที่ 2 (จำลอง Client 2):**
+  ```bash
+  docker exec -it os-server java Client 2
+  ```
+* **Terminal หน้าต่างที่ 3 (จำลอง Client 3):**
+  ```bash
+  docker exec -it os-server java Client 3
+  ```
+* **Terminal หน้าต่างที่ 4 (จำลอง Client 4):**
+  ```bash
+  docker exec -it os-server java Client 4
+  ```
+* **Terminal หน้าต่างที่ 5 (จำลอง Client 5):**
+  ```bash
+  docker exec -it os-server java Client 5
+  ```
+
+---
+
+### 5. รูปแบบ Message Queue ที่ใช้
+ระบบใช้การสื่อสารระหว่างโพรเซส (Inter-Process Communication: IPC) ผ่าน **Shared File Queue / Shared Volume Directory** แทนการใช้ Network Socket เพื่อเป็นไปตามหลักการจัดการทรัพยากรของระบบปฏิบัติการ:
+* **โครงสร้างคิวในระดับ File System:**
+  * `ipc_queue/requests/` : ที่เก็บไฟล์คำขอจาก Client มีรูปแบบชื่อไฟล์ `timestamp_seq_clientId.req`
+  * `ipc_queue/responses/` : ที่เก็บไฟล์ผลลัพธ์จาก Server ส่งกลับให้ Client มีรูปแบบชื่อไฟล์ `timestamp_seq_clientId.res`
+* **กลไกความปลอดภัยและความถูกต้อง (Concurrency & Atomicity):**
+  * **Atomic Write**: Client จะเขียนคำขอลงในไฟล์นามสกุล `.tmp` ก่อน และใช้คำสั่ง `renameTo()` เปลี่ยนเป็น `.req` เพื่อป้องกันไม่ให้ Server อ่านไฟล์ในขณะที่เนื้อหายังเขียนไม่สมบูรณ์
+  * **File Lock Protection**: Worker จะใช้ไฟล์ `.lock` ขณะหยิบคำขอ เพื่อป้องกันการชนกัน (Race Condition) ระหว่าง Worker ที่จะแย่งหยิบไฟล์เดียวกัน
+  * **FIFO Ordering**: คัดแยกและหยิบไฟล์คำขอขึ้นมาทำงานตามลำดับเวลา (Timestamp)
+  * **Worker Memory Queue**: ภายใน Server จัดการคิวงานของ Worker Thread Pool ทั้ง 3 ตัวผ่าน `LinkedList` ควบคุมด้วย Monitor Mechanism (`wait()` และ `notifyAll()`)
+
+---
+
+### 6. คำสั่งที่ Client รองรับ
+Client สามารถสั่งการได้ทั้งการพิมพ์ตัวเลขเมนูหรือพิมพ์ชื่อคำสั่งภาษาอังกฤษ:
+* `LIST` (หรือกด `1`): แสดงผังที่นั่งคอนเสิร์ตทั้งหมด 50 ที่นั่ง (Ticket 1-50) พร้อมสถานะว่างหรือถูกจอง
+* `STATUS <ticket_id>` (หรือกด `2`): ตรวจสอบสถานะและผู้ถือครองตั๋วใบที่ระบุ เช่น `STATUS 10`
+* `RESERVE <ticket_id>` (หรือกด `3`): ทำการจองตั๋วใบที่ระบุ เช่น `RESERVE 10`
+* `CANCEL <ticket_id>` (หรือกด `4`): ยกเลิกการจองตั๋ว (เฉพาะ Client ที่เป็นเจ้าของตั๋วจริงเท่านั้นจึงจะมีสิทธิ์ยกเลิกได้)
+* `SHOOT` (หรือกด `5`): รัน Concurrency Stress Test ส่ง 250 คำขอยิงแย่งตั๋วพร้อมกัน (5 Clients แย่งตั๋ว 50 ใบพร้อมกันในเสี้ยววินาที)
+* `QUIT` (หรือกด `0`): ปิดโปรแกรม Client
+
+---
+
+### 7. วิธีทดลอง Race Condition
+เพื่อสังเกตปัญหาทาง Concurrency เมื่อไม่มีการควบคุมการเข้าถึง Critical Section:
+1. ปิดระบบ Synchronization ในโค้ด (ดูวิธีในข้อ 8)
+2. สตาร์ต Server บน Docker Container
+3. เปิด Client อย่างน้อย 1 ตัว แล้วพิมพ์คำสั่ง `SHOOT` (หรือกด `5`)
+4. สังเกตผลลัพธ์:
+   * เกิดปัญหา **Overbooking (Check-Then-Act)**: จำนวนคำขอที่ได้รับผลตอบรับว่า "จองสำเร็จ" รวมกันจะเกิน 50 ครั้ง (เช่น สำเร็จ 65-70 ครั้ง จากตั๋วที่มีเพียง 50 ใบ)
+   * เกิดปัญหา **Lost Update**: ข้อมูลเจ้าของตั๋วถูกเขียนทับสลับไปมา เนื่องจาก Worker หลายตัวอ่านสถานะว่าว่างพร้อมกันในช่วงที่มี Delay แล้วเขียนทับข้อมูลกัน
+
+---
+
+### 8. วิธีเปิด/ปิด Synchronization
+สามารถสลับโหมดการทำงานได้ที่ไฟล์ `Server.java` (บรรทัดที่ 40):
+* **กรณีเปิด Synchronization (Default - ระบบถูกต้อง 100%):**
+  ```java
+  ReservationManager reservationManager = new ReservationManager(true, bridge);
+  ```
+  * ผลลัพธ์: มีการใช้ `synchronized (this)` ควบคุม Critical Section ตั๋วแต่ละใบจะถูกประมวลผลทีละ 1 Worker แบบ Atomic Transaction ยอดจองสำเร็จรวมจะเท่ากับ 50 ใบถ้วนเสมอ ไม่มีการจองซ้ำ
+* **กรณีปิด Synchronization (เพื่อทดลอง Race Condition):**
+  ```java
+  ReservationManager reservationManager = new ReservationManager(false, bridge);
+  ```
+  * ผลลัพธ์: ปิดกั้น Lock ทำให้เกิดการแย่งชิงทรัพยากรและเกิดปัญหา Overbooking
+
+---
+
+## วิธีรันบนเครื่องโดยตรง (Local Terminal Execution)
+
+กรณีไม่ต้องการรันผ่าน Docker สามารถรันบนเครื่องโดยตรงด้วยขั้นตอนดังนี้:
+
+### ขั้นตอนที่ 1: คอมไพล์โค้ด
 เปิด Terminal ที่โฟลเดอร์โปรเจกต์ แล้วรันคำสั่ง:
 ```bash
 javac *.java
 ```
 
-#### ขั้นตอนที่ 2: รัน Server (Terminal ที่ 1)
+### ขั้นตอนที่ 2: รัน Server (Terminal ที่ 1)
 ```bash
 java Server
 ```
 *ระบบจะล้างคิวเก่าอัตโนมัติ และแสดงสถานะ `Server is READY!`*
 
-#### ขั้นตอนที่ 3: รัน Client (Terminal ที่ 2 ถึง 6)
+### ขั้นตอนที่ 3: รัน Client (Terminal ที่ 2 ถึง 6)
 เปิด Terminal ใหม่เพื่อรัน Client แต่ละตัว (จำลองลูกค้าหลายคน):
 ```bash
 # Terminal 2 (Client 1)
@@ -84,47 +197,6 @@ java Client 2
 # Terminal 4 (Client 3)
 java Client 3
 ```
-
----
-
-### วิธีที่ 2: รันผ่าน Docker & Docker Compose
-
-#### ขั้นตอนที่ 1: สตาร์ต Server Container
-```bash
-docker compose up --build -d
-```
-
-#### ขั้นตอนที่ 2: ตรวจสอบ Log ของ Server
-```bash
-docker logs -f os-server
-```
-
-#### ขั้นตอนที่ 3: เปิด Terminal จำลอง Client 1-5 เข้าไปใน Container
-เปิด Terminal ใหม่แล้วสั่ง Execute เข้าไปยัง Container:
-```bash
-# Client 1
-docker exec -it os-server java Client 1
-
-# Client 2 (เปิด Terminal อีกหน้าต่าง)
-docker exec -it os-server java Client 2
-
-# Client 3 (เปิด Terminal อีกหน้าต่าง)
-docker exec -it os-server java Client 3
-```
-
----
-
-## การทดลอง Race Condition vs Synchronization
-
-ในคลาส `ReservationManager.java` สามารถปรับค่าสวิตช์ `useSynchronization` เพื่อเปรียบเทียบผลลัพธ์:
-
-### 1. กรณีปิด Synchronization (`useSynchronization = false`):
-* **พฤติกรรม**: หลาย Worker เข้าสู่ `processReservation` พร้อมกันโดยไม่มี Lock กั้น เกิดปัญหา **Check-Then-Act** ระหว่างช่วง `randomDelay()`
-* **ผลลัพธ์**: เกิด **Race Condition (Overbooking)** จองสำเร็จเกิน 50 ใบ (เช่น ได้รับการตอบรับสำเร็จ 65 คำขอ จากตั๋ว 50 ใบ) และข้อมูลเจ้าของตั๋วถูกเขียนทับ (Lost Update)
-
-### 2. กรณีเปิด Synchronization (`useSynchronization = true`):
-* **พฤติกรรม**: ใช้ **`synchronized (this)`** ควบคุม Critical Section ทำให้ Worker เข้าไปตรวจสอบและบันทึกตั๋วได้ทีละ 1 ตัวแบบ **Atomic Transaction**
-* **ผลลัพธ์**: ข้อมูลถูกต้อง 100% ยอดจองสำเร็จรวม **50 ใบถ้วนเสมอ** ไม่มีตั๋วถูกขายซ้ำ และรักษาสิทธิ์ของเจ้าของตั๋วได้สมบูรณ์
 
 ---
 
