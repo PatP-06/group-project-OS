@@ -3,4 +3,6 @@ FROM eclipse-temurin:17-jdk
 
 WORKDIR /workspace
 
-CMD ["sh", "-c", "javac Server.java Client.java && java Server"]
+COPY *.java ./
+
+CMD ["sh", "-c", "javac *.java && java Server; tail -f /dev/null"]
