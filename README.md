@@ -20,7 +20,6 @@
 - [วิธีรันบนเครื่องโดยตรง (Local Terminal Execution)](#วิธีรันบนเครื่องโดยตรง-local-terminal-execution)
 - [ระบบบันทึกส่วนกลาง (Centralized Logging)](#ระบบบันทึกส่วนกลาง-centralized-logging)
 - [ผู้จัดทำ (Producer)](#ผู้จัดทำ-producer)
-
 ---
 
 ## โครงสร้างโปรเจกต์ (Project Structure)
